@@ -1,7 +1,7 @@
 # auto-reply-email-server
 Linux server running 24 hrs
 # Auto-Reply Email Bot (IMAP/SMTP)
-
+https://yashvinjasani.github.io/auto-reply-email-server//implementation_using_js.html
 A lightweight, persistent email auto-responder written in Python. It monitors an inbox using IMAP, replies to new messages via SMTP, and uses a local SQLite database to prevent reply loops and ensure contacts are only emailed once per defined period (e.g., every 24 hours).
 
 ## Features
