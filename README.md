@@ -207,6 +207,10 @@ if __name__ == "__main__":
         # Wait 60 seconds before next check
         time.sleep(60)
 
+
+
+
+
 3. SERVER_INSTRUCTIONS.md
 Save this as SERVER_INSTRUCTIONS.md. This contains the Linux deployment steps.
 # Linux Server Deployment Instructions
