@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Reply Logic Simulator</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --success-bg: #dcfce7;
+            --success-text: #166534;
+            --sent-bg: #dbeafe;
+            --sent-text: #1e40af;
+            --terminal-bg: #111827;
+            --terminal-text: #4ade80;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: var(--text);
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr 1.5fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.25rem;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Buttons */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+            margin-top: auto;
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Terminal Logs */
+        .terminal {
+            background: var(--terminal-bg);
+            color: var(--terminal-text);
+            font-family: 'Consolas', 'Monaco', monospace;
+            padding: 16px;
+            border-radius: 8px;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            margin-top: 20px;
+        }
+
+        .log-entry {
+            margin-bottom: 6px;
+            border-bottom: 1px solid #374151;
+            padding-bottom: 4px;
+        }
+        
+        .log-entry.error { color: #f87171; }
+        .log-entry.success { color: #4ade80; }
+
+        /* Email List */
+        .email-list {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 600px;
+            padding-right: 5px;
+        }
+
+        .email-item {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            animation: slideIn 0.3s ease-out;
+            position: relative;
+        }
+
+        .email-item.inbox {
+            background-color: white;
+            border-left: 4px solid #10b981;
+        }
+
+        .email-item.sent {
+            background-color: #eff6ff;
+            border-left: 4px solid var(--primary);
+            margin-left: 20px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-right: 8px;
+        }
+
+        .badge.inbox { background: var(--success-bg); color: var(--success-text); }
+        .badge.sent { background: var(--sent-bg); color: var(--sent-text); }
+
+        .email-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .email-subject {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .email-body {
+            font-size: 0.95rem;
+            color: #4b5563;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🤖 Auto-Reply Server Simulator</h1>
+        <p>Runs entirely in your browser using LocalStorage. No server required.</p>
+    </div>
+
+    <div class="grid">
+        
+        <!-- CONTROL PANEL -->
+        <div class="card">
+            <h2>1. Send Test Email</h2>
+            
+            <div class="form-group">
+                <label for="sender">Sender Identity</label>
+                <select id="sender">
+                    <option value="alice@example.com">Alice (alice@example.com)</option>
+                    <option value="bob@example.com">Bob (bob@example.com)</option>
+                    <option value="spammer@marketing.com">Spammer (spammer@marketing.com)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="subject">Subject Line</label>
+                <input type="text" id="subject" value="Urgent question about the project">
+            </div>
+
+            <button id="sendBtn" class="btn btn-primary" onclick="handleSendEmail()">Send Email</button>
+            <button class="btn btn-danger" onclick="resetDb()">⚠️ Wipe Server Memory</button>
+
+            <h3 style="margin-top: 24px; margin-bottom: 10px; font-size: 0.9rem; font-weight: 600; color: var(--text-light);">SERVER TERMINAL LOGS</h3>
+            <div id="logs" class="terminal">
+                <div class="log-entry">> System Ready... Virtual Database Initialized.</div>
+            </div>
+        </div>
+
+        <!-- EMAIL MONITOR -->
+        <div class="card">
+            <h2>2. Live Traffic Monitor</h2>
+            <div id="email-list" class="email-list">
+                <!-- Emails load here via JS -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- CONSTANTS ---
+        const DB_KEY_EMAILS = 'sim_emails';
+        const DB_KEY_LOGS = 'sim_reply_logs';
+        const REPLY_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+        // --- UTILS ---
+        function getTimestamp() {
+            return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        // --- DATABASE LAYER (LocalStorage) ---
+        function getEmails() {
+            const data = localStorage.getItem(DB_KEY_EMAILS);
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveEmail(emailObj) {
+            const emails = getEmails();
+            emails.push(emailObj);
+            localStorage.setItem(DB_KEY_EMAILS, JSON.stringify(emails));
+            renderEmails();
+        }
+
+        function getReplyLogs() {
+            const data = localStorage.getItem(DB_KEY_LOGS);
+            return data ? JSON.parse(data) : {};
+        }
+
+        function saveReplyLog(email, timestamp) {
+            const logs = getReplyLogs();
+            logs[email] = timestamp;
+            localStorage.setItem(DB_KEY_LOGS, JSON.stringify(logs));
+        }
+
+        // --- UI LOGIC ---
+        function log(msg, type = 'normal') {
+            const el = document.getElementById('logs');
+            const time = getTimestamp();
+            const cssClass = type === 'error' ? 'log-entry error' : (type === 'success' ? 'log-entry success' : 'log-entry');
+            el.innerHTML += `<div class="${cssClass}">[${time}] ${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function handleSendEmail() {
+            const sender = document.getElementById('sender').value;
+            const subject = document.getElementById('subject').value;
+            const btn = document.getElementById('sendBtn');
+
+            // 1. UI Feedback
+            btn.disabled = true;
+            btn.innerText = "Sending...";
+
+            // 2. Ingest Email (Simulate incoming SMTP)
+            const inboundEmail = {
+                folder: 'inbox',
+                sender: sender,
+                recipient: 'My Server',
+                subject: subject,
+                body: "Hey, are you there? This is a test message.",
+                timestamp: getTimestamp()
+            };
+            saveEmail(inboundEmail);
+            log(`Received email from ${sender}...`);
+
+            // 3. Trigger Server Logic (Simulate delay)
+            setTimeout(() => {
+                processAutoReply(sender);
+                btn.disabled = false;
+                btn.innerText = "Send Email";
+            }, 800);
+        }
+
+        // --- SERVER LOGIC (The "Python" Logic translated to JS) ---
+        function processAutoReply(senderEmail) {
+            const replyLogs = getReplyLogs();
+            const lastReplyTime = replyLogs[senderEmail];
+            const now = Date.now();
+            
+            let shouldSend = false;
+            let logMsg = "";
+            let logType = "normal";
+
+            if (!lastReplyTime) {
+                // CASE 1: Never replied before
+                shouldSend = true;
+                logMsg = `✅ New contact (${senderEmail}). Queuing reply...`;
+                logType = "success";
+            } else {
+                // CASE 2: Check Cooldown
+                const timeDiff = now - lastReplyTime;
+                if (timeDiff > REPLY_COOLDOWN_MS) {
+                    shouldSend = true;
+                    logMsg = `✅ Cooldown expired for ${senderEmail}. Queuing reply...`;
+                    logType = "success";
+                } else {
+                    // CASE 3: Ignored
+                    shouldSend = false;
+                    logMsg = `⛔ IGNORED: Already replied to ${senderEmail} recently.`;
+                    logType = "error";
+                }
+            }
+
+            log(logMsg, logType);
+
+            if (shouldSend) {
+                // Execute Reply
+                const replyEmail = {
+                    folder: 'sent',
+                    sender: 'Server Bot',
+                    recipient: senderEmail,
+                    subject: 'Re: ' + "Out of Office",
+                    body: "AUTO-REPLY: Thank you for your email. I am currently away and will respond when I return.",
+                    timestamp: getTimestamp()
+                };
+                saveEmail(replyEmail);
+                saveReplyLog(senderEmail, now);
+                log(`>> SENT: Reply dispatched to ${senderEmail}`, "success");
+            }
+        }
+
+        function resetDb() {
+            if(confirm("Are you sure? This will wipe the server memory and all emails.")) {
+                localStorage.removeItem(DB_KEY_EMAILS);
+                localStorage.removeItem(DB_KEY_LOGS);
+                log("SYSTEM RESET: Memory wiped.", "error");
+                renderEmails();
+            }
+        }
+
+        function renderEmails() {
+            const emails = getEmails();
+            const list = document.getElementById('email-list');
+            list.innerHTML = '';
+
+            // Sort newest first
+            const sortedEmails = [...emails].reverse();
+
+            if (sortedEmails.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:#9ca3af; padding:40px;">No emails yet.<br>Use the panel on the left to send one.</div>';
+                return;
+            }
+
+            sortedEmails.forEach(email => {
+                const isInbox = email.folder === 'inbox';
+                const badgeClass = isInbox ? 'badge inbox' : 'badge sent';
+                const badgeText = isInbox ? 'INBOX' : 'SENT';
+                const containerClass = isInbox ? 'email-item inbox' : 'email-item sent';
+                const senderDisplay = isInbox ? email.sender : `To: ${email.recipient}`;
+                
+                const html = `
+                    <div class="${containerClass}">
+                        <div class="email-meta">
+                            <div>
+                                <span class="${badgeClass}">${badgeText}</span>
+                                <strong>${senderDisplay}</strong>
+                            </div>
+                            <div>${email.timestamp}</div>
+                        </div>
+                        <span class="email-subject">${email.subject}</span>
+                        <div class="email-body">${email.body}</div>
+                    </div>
+                `;
+                list.innerHTML += html;
+            });
+        }
+
+        // Initialize on load
+        renderEmails();
+    </script>
+</body>
+</html>
